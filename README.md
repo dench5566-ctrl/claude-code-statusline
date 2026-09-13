@@ -5,10 +5,7 @@ actually matters while you work: the model, context window usage, session cost, 
 the part most status lines miss — your **subscription rate limits** (5-hour and weekly
 windows) with time until reset.
 
-```
-◆ Opus 5·high ⚡ │ my-project ⎇ main* │ ctx 152k/200k 76% │ out 18.2k │ $0.42 │ 7m
-5h ▰▰▰▰▰▰▰▰▰▱ 94% ↺25m   week ▰▱▱▱▱▱▱▱▱▱ 12% ↺5d 18h
-```
+![The status line early in a session and later, with the context window at 80% and the 5-hour limit at 93%](docs/statusline.png)
 
 No dependencies beyond the Python 3 that ships with macOS and most Linux distros.
 
@@ -20,7 +17,7 @@ No dependencies beyond the Python 3 that ships with macOS and most Linux distros
 | --- | --- |
 | `◆ Opus 5·high` | Active model and effort level |
 | `⚡` / `💤` | Fast mode on / extended thinking off |
-| `my-project ⎇ main*` | Current directory and git branch (`*` = uncommitted changes) |
+| `my-project (main*)` | Current directory and git branch (`*` = uncommitted changes) |
 | `ctx 152k/200k 76%` | Context window: tokens used, window size, percentage |
 | `out 18.2k` | Output tokens generated this session |
 | `$0.42` | Session cost |

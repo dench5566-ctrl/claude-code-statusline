@@ -128,7 +128,7 @@ def main():
     short = "~" + cwd[len(home):] if cwd.startswith(home) else cwd
     short = os.path.basename(short.rstrip("/")) or short
     br = branch(cwd)
-    row.append(c(BLUE, short) + (c(GREY, " ⎇ " + br) if br else ""))
+    row.append(c(BLUE, short) + (c(GREY, " (" + br + ")") if br else ""))
 
     ctx = d.get("context_window") or {}
     used = ctx.get("total_input_tokens") or 0
