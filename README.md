@@ -6,8 +6,8 @@ the part most status lines miss — your **subscription rate limits** (5-hour an
 windows) with time until reset.
 
 ```
-◆ Opus 5·high ⚡ │ my-project ⎇ main* │ ctx 152k/200k 76% │ out 18.2k │ $0.42 │ 7м
-5ч ▰▰▰▰▰▰▰▰▰▱ 94% ↺25м   нед ▰▱▱▱▱▱▱▱▱▱ 12% ↺5д 18ч
+◆ Opus 5·high ⚡ │ my-project ⎇ main* │ ctx 152k/200k 76% │ out 18.2k │ $0.42 │ 7m
+5h ▰▰▰▰▰▰▰▰▰▱ 94% ↺25m   week ▰▱▱▱▱▱▱▱▱▱ 12% ↺5d 18h
 ```
 
 No dependencies beyond the Python 3 that ships with macOS and most Linux distros.
@@ -24,13 +24,13 @@ No dependencies beyond the Python 3 that ships with macOS and most Linux distros
 | `ctx 152k/200k 76%` | Context window: tokens used, window size, percentage |
 | `out 18.2k` | Output tokens generated this session |
 | `$0.42` | Session cost |
-| `7м` | Wall-clock session duration |
+| `7m` | Wall-clock session duration |
 
 **Line 2 — rate limits**
 
-Subscription plans report a 5-hour window (`5ч`) and a weekly window (`нед`), each with a
+Subscription plans report a 5-hour window (`5h`) and a weekly window (`week`), each with a
 bar, a percentage, and time until reset (`↺`). API/gateway accounts get a spend limit
-(`$лим`) instead. Before the first model response of a session the data isn't available
+(`spend`) instead. Before the first model response of a session the data isn't available
 yet, and the line says so.
 
 Colors track pressure: blue → teal → orange at 70% → red at 90%. The palette is picked to
@@ -100,26 +100,14 @@ repository.
 
 Everything worth tweaking sits at the top of the file:
 
+- `LOCALE` — `"en"` (default) or `"ru"` for the labels and time units
+- `LABELS` — the label table itself; add your own language as another entry
 - `GREY`, `BLUE`, `TEAL`, `ORANGE`, `RED`, … — 256-color codes
 - `heat()` — the thresholds where colors escalate (40 / 70 / 90 percent)
 - `bar(pct, width=10)` — bar width and the `▰▱` characters
-- The labels `5ч` / `нед` / `$лим` and the `ctx` / `out` prefixes live in `main()`
-
----
-
-## По-русски
-
-Статусная строка для Claude Code: модель, использование контекстного окна, стоимость
-сессии и **лимиты подписки** — 5-часовое и недельное окна с процентом и временем до
-сброса. Один файл, только стандартная библиотека Python.
-
-Установка — скопировать `statusline.py` в `~/.claude/` и добавить блок `statusLine`
-в `~/.claude/settings.json` (см. раздел Install выше).
-
-Лимиты появляются после первого ответа модели в сессии. Для API-аккаунтов вместо них
-показывается лимит трат. Цвета: синий → бирюзовый → оранжевый (70%) → красный (90%),
-подобраны так, чтобы читаться на светлой теме и различаться при дальтонизме.
+- The `ctx` / `out` prefixes and the segment order live in `main()`
 
 ## License
 
-MIT
+[0BSD](LICENSE) — provided as is, with no warranty and no liability, and no
+attribution required. Copy it into your dotfiles and change whatever you like.

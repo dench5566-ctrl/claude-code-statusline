@@ -7,6 +7,23 @@ import subprocess
 import sys
 import time
 
+# Label language: "en" or "ru".
+LOCALE = "en"
+
+LABELS = {
+    "en": {
+        "five_hour": "5h", "seven_day": "week", "spend_limit": "spend",
+        "hour": "h", "min": "m", "sec": "s", "day": "d",
+        "no_limits": "limits: no data yet (they arrive with the first response)",
+    },
+    "ru": {
+        "five_hour": "5\u0447", "seven_day": "\u043d\u0435\u0434", "spend_limit": "$\u043b\u0438\u043c",
+        "hour": "\u0447", "min": "\u043c", "sec": "\u0441", "day": "\u0434",
+        "no_limits": "\u043b\u0438\u043c\u0438\u0442\u044b: \u043d\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445 (\u043f\u043e\u044f\u0432\u044f\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u043f\u0435\u0440\u0432\u043e\u0433\u043e \u043e\u0442\u0432\u0435\u0442\u0430)",
+    },
+}
+L = LABELS.get(LOCALE, LABELS["en"])
+
 R = "\033[0m"
 
 
@@ -62,14 +79,13 @@ def until(ts):
         return None
     left = int(ts) - int(time.time())
     if left <= 0:
-        return "сейчас"
+        return "0" + L["min"]
     h, m = left // 3600, (left % 3600) // 60
     if h >= 24:
-        d = h // 24
-        return "%dд %dч" % (d, h % 24)
+        return "%d%s %d%s" % (h // 24, L["day"], h % 24, L["hour"])
     if h:
-        return "%dч %02dм" % (h, m)
-    return "%dм" % max(m, 1)
+        return "%d%s %02d%s" % (h, L["hour"], m, L["min"])
+    return "%d%s" % (max(m, 1), L["min"])
 
 
 def branch(cwd):
@@ -134,21 +150,22 @@ def main():
 
     dur = (d.get("cost") or {}).get("total_duration_ms")
     if dur:
-        row.append(c(GREY, "%dм" % (dur / 60000) if dur >= 60000 else "%dс" % (dur / 1000)))
+        row.append(c(GREY, "%d%s" % (dur / 60000, L["min"]) if dur >= 60000
+                     else "%d%s" % (dur / 1000, L["sec"])))
 
     lines = [c(DIM, " │ ").join(row)]
 
     # ---------- line 2: rate limits ----------
     rl = d.get("rate_limits") or {}
     seg = []
-    for key, label in (("five_hour", "5ч"), ("seven_day", "нед"), ("spend_limit", "$лим")):
+    for key in ("five_hour", "seven_day", "spend_limit"):
         w = rl.get(key)
         if not w:
             continue
         pct = float(w.get("used_percentage") or 0)
         left = until(w.get("resets_at"))
         seg.append(
-            c(GREY, label + " ")
+            c(GREY, L[key] + " ")
             + bar(pct)
             + c(heat(pct), " %d%%" % round(pct))
             + (c(DIM, " ↺" + left) if left else "")
@@ -156,7 +173,7 @@ def main():
     if seg:
         lines.append(c(DIM, "  ").join(seg))
     else:
-        lines.append(c(DIM, "лимиты: нет данных (появятся после первого ответа)"))
+        lines.append(c(DIM, L["no_limits"]))
 
     sys.stdout.write("\n".join(lines))
 
