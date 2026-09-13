@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Claude Code status line: model, context tokens, cost, rate limits."""
+"""Claude Code status line: model, context tokens, cost, rate limits.
+
+Claude reports used_percentage (how much has been spent). This script inverts
+that to remaining quota: bars start full at 100% and drain to 0%. Color still
+tracks pressure (spent), so a nearly empty bar turns orange then red.
+"""
 import json
 import os
 import subprocess
@@ -57,20 +62,21 @@ def num(n):
     return str(n)
 
 
-def heat(pct):
-    if pct >= 90:
+def heat(used_pct):
+    """Color by pressure (spent), not by remaining fill."""
+    if used_pct >= 90:
         return RED
-    if pct >= 70:
+    if used_pct >= 70:
         return ORANGE
-    if pct >= 40:
+    if used_pct >= 40:
         return TEAL
     return BLUE
 
 
-def bar(pct, width=10):
-    pct = max(0.0, min(100.0, float(pct)))
-    filled = int(round(pct / 100.0 * width))
-    return c(heat(pct), "▰" * filled) + c(DIM, "▱" * (width - filled))
+def bar(remaining_pct, used_pct, width=10):
+    remaining_pct = max(0.0, min(100.0, float(remaining_pct)))
+    filled = int(round(remaining_pct / 100.0 * width))
+    return c(heat(used_pct), "▰" * filled) + c(DIM, "▱" * (width - filled))
 
 
 def until(ts):
@@ -108,6 +114,13 @@ def branch(cwd):
         return None
 
 
+def remaining(used_pct, remaining_pct=None):
+    used_pct = float(used_pct or 0)
+    if remaining_pct is not None:
+        return used_pct, float(remaining_pct)
+    return used_pct, max(0.0, 100.0 - used_pct)
+
+
 def main():
     d = load()
     cwd = (d.get("workspace") or {}).get("current_dir") or d.get("cwd") or os.getcwd()
@@ -134,11 +147,15 @@ def main():
     used = ctx.get("total_input_tokens") or 0
     size = ctx.get("context_window_size") or 0
     if size:
-        pct = float(ctx.get("used_percentage") or (used * 100.0 / size))
+        used_pct, left_pct = remaining(
+            ctx.get("used_percentage") or (used * 100.0 / size),
+            ctx.get("remaining_percentage"),
+        )
+        left = max(int(size) - int(used), 0)
         row.append(
             c(GREY, "ctx ")
-            + c(heat(pct), "%s/%s" % (num(used), num(size)))
-            + c(heat(pct), " %d%%" % round(pct))
+            + c(heat(used_pct), "%s/%s" % (num(left), num(size)))
+            + c(heat(used_pct), " %d%%" % round(left_pct))
         )
         out_tok = ctx.get("total_output_tokens") or 0
         if out_tok:
@@ -155,20 +172,20 @@ def main():
 
     lines = [c(DIM, " │ ").join(row)]
 
-    # ---------- line 2: rate limits ----------
+    # ---------- line 2: rate limits (remaining quota) ----------
     rl = d.get("rate_limits") or {}
     seg = []
     for key in ("five_hour", "seven_day", "spend_limit"):
         w = rl.get(key)
         if not w:
             continue
-        pct = float(w.get("used_percentage") or 0)
-        left = until(w.get("resets_at"))
+        used_pct, left_pct = remaining(w.get("used_percentage") or 0)
+        reset = until(w.get("resets_at"))
         seg.append(
             c(GREY, L[key] + " ")
-            + bar(pct)
-            + c(heat(pct), " %d%%" % round(pct))
-            + (c(DIM, " ↺" + left) if left else "")
+            + bar(left_pct, used_pct)
+            + c(heat(used_pct), " %d%%" % round(left_pct))
+            + (c(DIM, " ↺" + reset) if reset else "")
         )
     if seg:
         lines.append(c(DIM, "  ").join(seg))
